@@ -89,7 +89,12 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
 
     if resume and os.path.exists(checkpoint_path):
         logger.info(f"Resuming training from checkpoint: {checkpoint_path}")
-        model = tf.keras.models.load_model(checkpoint_path)
+        try:
+            model = tf.keras.models.load_model(checkpoint_path, safe_mode=False)
+        except Exception as e:
+            logger.warning(f"Could not load full model config: {e}. Rebuilding architecture and loading weights only.")
+            model = build_model(cfg, num_classes)
+            model.load_weights(checkpoint_path)
     else:
         logger.info("Building new model.")
         model = build_model(cfg, num_classes)
