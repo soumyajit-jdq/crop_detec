@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -27,6 +28,40 @@ from src.models import build_model
 from src.models.transfer_cnn import unfreeze_top_layers
 from src.utils.callbacks import LoguruCallback, LRSchedulerLogger
 from src.utils.logger import logger
+
+
+def _state_path(cfg: Config) -> str:
+    """Return the path to the training state JSON file."""
+    return os.path.join(cfg.model_save_dir, "training_state.json")
+
+
+def _save_state(cfg: Config, phase: str, epoch: int) -> None:
+    """Persist the last completed epoch so training can resume."""
+    state = {"phase": phase, "last_epoch": epoch}
+    with open(_state_path(cfg), "w") as f:
+        json.dump(state, f)
+
+
+def _load_state(cfg: Config) -> dict:
+    """Load the saved training state, or return defaults."""
+    path = _state_path(cfg)
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return json.load(f)
+    return {"phase": "phase1_initial", "last_epoch": 0}
+
+
+class _EpochStateCallback(tf.keras.callbacks.Callback):
+    """Save training state after every epoch so we can resume."""
+
+    def __init__(self, cfg: Config, phase: str):
+        super().__init__()
+        self._cfg = cfg
+        self._phase = phase
+
+    def on_epoch_end(self, epoch: int, logs=None):
+        # epoch is 0-indexed, save as 1-indexed completed count
+        _save_state(self._cfg, self._phase, epoch + 1)
 
 
 def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
@@ -66,10 +101,11 @@ def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
         ),
         tf.keras.callbacks.CSVLogger(
             os.path.join(cfg.log_dir, f"training_{phase}.csv"),
-            append=False,
+            append=True,
         ),
         LoguruCallback(),
         LRSchedulerLogger(),
+        _EpochStateCallback(cfg, phase),
     ]
     return callbacks
 
@@ -87,6 +123,7 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
         model_name += f"_{cfg.backbone}"
     checkpoint_path = os.path.join(cfg.model_save_dir, f"{model_name}_best.h5")
 
+    initial_epoch = 0
     if resume and os.path.exists(checkpoint_path):
         logger.info(f"Resuming training from checkpoint: {checkpoint_path}")
         try:
@@ -95,19 +132,26 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
             logger.warning(f"Could not load full model config: {e}. Rebuilding architecture and loading weights only.")
             model = build_model(cfg, num_classes)
             model.load_weights(checkpoint_path)
+        state = _load_state(cfg)
+        initial_epoch = state.get("last_epoch", 0)
+        logger.info(f"Resuming from epoch {initial_epoch + 1}/{cfg.epochs} (phase: {state.get('phase', 'unknown')})")
     else:
         logger.info("Building new model.")
         model = build_model(cfg, num_classes)
         model.summary(print_fn=logger.info)
 
-    # Phase 1 — Initial training─
-    logger.info(f"Phase 1: Training for {cfg.epochs} epochs (lr={cfg.learning_rate})")
-    model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=cfg.epochs,
-        callbacks=_get_callbacks(cfg, phase="phase1_initial"),
-    )
+    # Phase 1 — Initial training
+    if initial_epoch < cfg.epochs:
+        logger.info(f"Phase 1: Training epochs {initial_epoch + 1}-{cfg.epochs} (lr={cfg.learning_rate})")
+        model.fit(
+            train_ds,
+            validation_data=val_ds,
+            epochs=cfg.epochs,
+            initial_epoch=initial_epoch,
+            callbacks=_get_callbacks(cfg, phase="phase1_initial"),
+        )
+    else:
+        logger.info(f"Phase 1 already complete ({initial_epoch} epochs). Skipping.")
 
     # Phase 2 — Fine-tuning (transfer only)
     if cfg.model_type == "transfer" and cfg.fine_tune_layers > 0:
@@ -128,10 +172,17 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
                 ),
             ],
         )
+        ft_initial = 0
+        if resume:
+            state = _load_state(cfg)
+            if state.get("phase") == "phase2_finetune":
+                ft_initial = state.get("last_epoch", 0)
+                logger.info(f"Resuming fine-tuning from epoch {ft_initial + 1}/{cfg.fine_tune_epochs}")
         model.fit(
             train_ds,
             validation_data=val_ds,
             epochs=cfg.fine_tune_epochs,
+            initial_epoch=ft_initial,
             callbacks=_get_callbacks(cfg, phase="phase2_finetune"),
         )
 
