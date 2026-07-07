@@ -1,9 +1,9 @@
-# ── OS ───────────────────────────────────────────────────────
+# OS
 .DS_Store
 **/.DS_Store
 Thumbs.db
 
-# ── Python ───────────────────────────────────────────────────
+# Python 
 __pycache__/
 *.py[cod]
 *$py.class
@@ -14,43 +14,42 @@ dist/
 build/
 .eggs/
 
-# ── Virtual environments ────────────────────────────────────
+# Virtual environments 
 .venv/
 venv/
 env/
 ENV/
 
-# ── UV / pip lock files ──────────────────────────────────────
+# UV / pip lock files
 uv.lock
 
-# ── IDE ──────────────────────────────────────────────────────
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# ── Jupyter ──────────────────────────────────────────────────
+# Jupyter
 .ipynb_checkpoints/
 
-# ── Logs ─────────────────────────────────────────────────────
+# Logs
 logs/
 outputs/logs/
 *.log
 
-# ── Data & Models (large files — use DVC) ────────────────────
+# Data & Models (large files — use DVC)
 data/
-models/
 *.h5
 *.onnx
 *.tflite
 *_saved_model/
 crop_cnn_saved_model/
 
-# ── Training outputs ────────────────────────────────────────
+# Training outputs
 outputs/tensorboard/
 runs/
 
-# ── Type checking / linting ─────────────────────────────────
+# Type checking / linting
 .mypy_cache/
 .ruff_cache/
 .pytype/
@@ -59,7 +58,7 @@ htmlcov/
 .coverage
 .coverage.*
 
-# ── Misc ─────────────────────────────────────────────────────
+# Misc
 .pypirc
 *.manifest
 *.spec
