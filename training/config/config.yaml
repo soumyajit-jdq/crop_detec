@@ -1,0 +1,59 @@
+# ============================================================
+# Crop Detection CNN — Configuration
+# ============================================================
+# Toggle `model_type` between "custom" and "transfer" to switch
+# between a from-scratch CNN and a pretrained backbone.
+# ============================================================
+
+# Paths
+data_dir: "../dataset/RGB_224x224/RGB_224x224"
+model_save_dir: "../models"
+log_dir: "outputs/logs"
+tensorboard_dir: "outputs/tensorboard"
+
+# Model
+# "custom"   → deep CNN built from scratch
+# "transfer" → pretrained backbone with fine-tuning
+model_type: "transfer"
+
+# Backbone used when model_type == "transfer"
+# Options: "resnet50", "efficientnetb3"
+backbone: "efficientnetb3"
+
+# Image 
+image_size: 224
+color_mode: "rgb"  # "rgb" or "grayscale"
+
+# Training
+batch_size: 16
+epochs: 50
+learning_rate: 0.001
+optimizer: "adam"  # "adam" or "sgd"
+label_smoothing: 0.1
+
+# Fine-tuning (transfer only): unfreeze top N layers of backbone
+# Set to 0 to keep backbone fully frozen
+fine_tune_layers: 30
+fine_tune_lr: 0.0001
+fine_tune_epochs: 20
+
+# Augmentation
+augmentation:
+  horizontal_flip: true
+  vertical_flip: false
+  rotation_range: 0.15       # fraction of 2π
+  zoom_range: 0.15           # fraction
+  brightness_range: 0.2      # delta
+  contrast_range: 0.2        # delta
+
+# Callbacks 
+early_stopping_patience: 10
+reduce_lr_patience: 5
+reduce_lr_factor: 0.5
+reduce_lr_min: 0.000001
+
+# Export
+export_formats:
+  - "h5"
+  - "saved_model"
+  - "onnx"

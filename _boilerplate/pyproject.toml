@@ -1,0 +1,23 @@
+[project]
+name = "boilerplate"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Soumyajit pal", email = "soumyajit@jadequest.com" },
+]
+readme = "README.md"
+requires-python = "<3.13,>=3.12"
+dependencies = [
+'fastapi ; python_version >= "3.12" and python_version < "3.13"',
+  'uvicorn ; python_version >= "3.12" and python_version < "3.13"',
+  'loguru ; python_version >= "3.12" and python_version < "3.13"',
+  'pydantic-core ; python_version >= "3.12" and python_version < "3.13"',
+  'pydantic-settings ; python_version >= "3.12" and python_version < "3.13"',
+  'pydantic ; python_version >= "3.12" and python_version < "3.13"',
+  'ultralytics; python_version >= "3.12" and python_version < "3.13"',
+  'torch; python_version >= "3.12" and python_version < "3.13"',
+  'torchvision; python_version >= "3.12" and python_version < "3.13"',
+  'supervision; python_version >= "3.12" and python_version < "3.13"',
+  'dvc[gs]; python_version >= "3.12" and python_version < "3.13"',
+  'fiftyone; python_version >= "3.12" and python_version < "3.13"'
+]
