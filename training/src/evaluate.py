@@ -82,7 +82,7 @@ def evaluate(
         model_path = os.path.join(cfg.model_save_dir, f"{model_name}.h5")
 
     logger.info(f"Loading model from: {model_path}")
-    model = tf.keras.models.load_model(model_path)
+    model = tf.keras.models.load_model(model_path, safe_mode=False)
 
     # ── Built-in evaluation ──────────────────────────────────
     results = model.evaluate(test_ds, return_dict=True)

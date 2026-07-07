@@ -89,7 +89,7 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
 
     if resume and os.path.exists(checkpoint_path):
         logger.info(f"Resuming training from checkpoint: {checkpoint_path}")
-        model = tf.keras.models.load_model(checkpoint_path)
+        model = tf.keras.models.load_model(checkpoint_path, safe_mode=False)
     else:
         logger.info("Building new model.")
         model = build_model(cfg, num_classes)
