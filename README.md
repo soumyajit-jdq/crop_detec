@@ -1,10 +1,10 @@
-# 🌾 Crop Detection & Classification System
+# Crop Detection & Classification System
 
 An end-to-end CNN-based crop detection and classification system that identifies **139 types of crops/plants** from images. Built with TensorFlow/Keras, served via FastAPI.
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 crop_detection/
@@ -33,7 +33,7 @@ crop_detection/
 └── _boilerplate/                # Boilerplate templates
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 cd training
@@ -64,7 +64,7 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000
 curl -X POST http://localhost:8000/api/v1/predict -F "file=@crop_image.jpg"
 ```
 
-## 🔧 Model Architectures
+## Model Architectures
 
 Toggle between architectures in `config/config.yaml`:
 
@@ -74,7 +74,7 @@ Toggle between architectures in `config/config.yaml`:
 | EfficientNetB3 | `model_type: "transfer"`, `backbone: "efficientnetb3"` | Transfer learning (default) |
 | ResNet50 | `model_type: "transfer"`, `backbone: "resnet50"` | Transfer learning |
 
-## 📊 Dataset
+## Dataset
 
 **140 Most Popular Crops Image Dataset** — [Kaggle](https://www.kaggle.com/datasets/omrathod2003/140-most-popular-crops-image-dataset)
 
@@ -82,7 +82,7 @@ Toggle between architectures in `config/config.yaml`:
 - 224×224 RGB images
 - Pre-split: train / val / test
 
-## 📖 Documentation
+## Documentation
 
 See [training/README.md](training/README.md) for detailed documentation on:
 - Configuration options
