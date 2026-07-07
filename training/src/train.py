@@ -74,7 +74,7 @@ def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
     return callbacks
 
 
-def train(cfg: Config) -> tf.keras.Model:
+def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
     """Run the full training pipeline and return the trained model."""
     # ── Data ─────────────────────────────────────────────────
     train_ds, val_ds, _test_ds, class_names = load_datasets(cfg)
@@ -82,8 +82,18 @@ def train(cfg: Config) -> tf.keras.Model:
     cfg.num_classes = num_classes
 
     # ── Model ────────────────────────────────────────────────
-    model = build_model(cfg, num_classes)
-    model.summary(print_fn=logger.info)
+    model_name = f"crop_cnn_{cfg.model_type}"
+    if cfg.model_type == "transfer":
+        model_name += f"_{cfg.backbone}"
+    checkpoint_path = os.path.join(cfg.model_save_dir, f"{model_name}_best.h5")
+
+    if resume and os.path.exists(checkpoint_path):
+        logger.info(f"Resuming training from checkpoint: {checkpoint_path}")
+        model = tf.keras.models.load_model(checkpoint_path)
+    else:
+        logger.info("Building new model.")
+        model = build_model(cfg, num_classes)
+        model.summary(print_fn=logger.info)
 
     # ── Phase 1 — Initial training ───────────────────────────
     logger.info(f"Phase 1: Training for {cfg.epochs} epochs (lr={cfg.learning_rate})")
@@ -140,6 +150,11 @@ def main() -> None:
         default=None,
         help="Path to config.yaml (default: config/config.yaml)",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume training from the best checkpoint if it exists.",
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -147,7 +162,7 @@ def main() -> None:
     logger.info(f"Data dir: {cfg.data_dir}")
     logger.info(f"Model save dir: {cfg.model_save_dir}")
 
-    train(cfg)
+    train(cfg, resume=args.resume)
     logger.info("Training complete!")
 
 
