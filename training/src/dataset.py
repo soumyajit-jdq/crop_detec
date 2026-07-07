@@ -113,16 +113,19 @@ def load_datasets(
     train_ds = (
         train_ds
         .map(_prepare_train, num_parallel_calls=AUTOTUNE)
+        .shuffle(buffer_size=1024)
         .prefetch(AUTOTUNE)
     )
     val_ds = (
         val_ds
         .map(_prepare_eval, num_parallel_calls=AUTOTUNE)
+        .cache()
         .prefetch(AUTOTUNE)
     )
     test_ds = (
         test_ds
         .map(_prepare_eval, num_parallel_calls=AUTOTUNE)
+        .cache()
         .prefetch(AUTOTUNE)
     )
 

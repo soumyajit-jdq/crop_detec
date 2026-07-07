@@ -1,5 +1,5 @@
 # src/train.py
-"""Main training orchestrator — run with ``python -m train``."""
+"""Main training orchestrator — run with ``python -m src.train``."""
 
 from __future__ import annotations
 
@@ -21,6 +21,12 @@ if gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         pass
+
+# Enable mixed precision for faster training
+try:
+    tf.keras.mixed_precision.set_global_policy('mixed_float16')
+except Exception:
+    pass  # Fall back to float32 if not supported
 
 from src.config import Config, load_config
 from src.dataset import load_datasets
@@ -88,13 +94,6 @@ def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
             restore_best_weights=True,
             verbose=1,
         ),
-        tf.keras.callbacks.ReduceLROnPlateau(
-            monitor="val_loss",
-            factor=cfg.reduce_lr_factor,
-            patience=cfg.reduce_lr_patience,
-            min_lr=cfg.reduce_lr_min,
-            verbose=1,
-        ),
         tf.keras.callbacks.TensorBoard(
             log_dir=os.path.join(cfg.tensorboard_dir, phase),
             histogram_freq=1,
@@ -107,6 +106,19 @@ def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
         LRSchedulerLogger(),
         _EpochStateCallback(cfg, phase),
     ]
+
+    # Only add ReduceLROnPlateau if not using cosine schedule
+    if cfg.lr_schedule != "cosine":
+        callbacks.append(
+            tf.keras.callbacks.ReduceLROnPlateau(
+                monitor="val_loss",
+                factor=cfg.reduce_lr_factor,
+                patience=cfg.reduce_lr_patience,
+                min_lr=cfg.reduce_lr_min,
+                verbose=1,
+            )
+        )
+
     return callbacks
 
 
@@ -117,7 +129,10 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
     num_classes = len(class_names)
     cfg.num_classes = num_classes
 
-    # Model 
+    # Calculate steps per epoch for LR schedule
+    steps_per_epoch = tf.data.experimental.cardinality(train_ds).numpy()
+
+    # Model
     model_name = f"crop_cnn_{cfg.model_type}"
     if cfg.model_type == "transfer":
         model_name += f"_{cfg.backbone}"
@@ -130,14 +145,14 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
             model = tf.keras.models.load_model(checkpoint_path, safe_mode=False)
         except Exception as e:
             logger.warning(f"Could not load full model config: {e}. Rebuilding architecture and loading weights only.")
-            model = build_model(cfg, num_classes)
+            model = build_model(cfg, num_classes, steps_per_epoch=steps_per_epoch)
             model.load_weights(checkpoint_path)
         state = _load_state(cfg)
         initial_epoch = state.get("last_epoch", 0)
         logger.info(f"Resuming from epoch {initial_epoch + 1}/{cfg.epochs} (phase: {state.get('phase', 'unknown')})")
     else:
         logger.info("Building new model.")
-        model = build_model(cfg, num_classes)
+        model = build_model(cfg, num_classes, steps_per_epoch=steps_per_epoch)
         model.summary(print_fn=logger.info)
 
     # Phase 1 — Initial training
@@ -186,7 +201,7 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
             callbacks=_get_callbacks(cfg, phase="phase2_finetune"),
         )
 
-    # Save final model─
+    # Save final model
     model_name = f"crop_cnn_{cfg.model_type}"
     if cfg.model_type == "transfer":
         model_name += f"_{cfg.backbone}"

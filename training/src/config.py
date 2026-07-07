@@ -48,6 +48,11 @@ class Config:
     optimizer: str = "adam"
     label_smoothing: float = 0.1
 
+    # Learning rate schedule
+    lr_schedule: str = "cosine"        # "cosine" or "plateau"
+    warmup_epochs: int = 3
+    cosine_min_lr: float = 1e-5
+
     # Fine-tuning (transfer only)
     fine_tune_layers: int = 30
     fine_tune_lr: float = 0.0001
@@ -74,9 +79,9 @@ class Config:
             raise ValueError(
                 f"model_type must be 'custom' or 'transfer', got '{self.model_type}'"
             )
-        if self.backbone not in ("resnet50", "efficientnetb3"):
+        if self.backbone not in ("resnet50", "efficientnetb0", "efficientnetb3"):
             raise ValueError(
-                f"backbone must be 'resnet50' or 'efficientnetb3', got '{self.backbone}'"
+                f"backbone must be 'resnet50', 'efficientnetb0', or 'efficientnetb3', got '{self.backbone}'"
             )
         if self.image_size <= 0:
             raise ValueError(f"image_size must be > 0, got {self.image_size}")

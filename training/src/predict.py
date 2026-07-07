@@ -110,7 +110,12 @@ def main() -> None:
         model_path = args.model
 
     logger.info(f"Loading model: {model_path}")
-    model = tf.keras.models.load_model(model_path, safe_mode=False)
+    from src.models.transfer_cnn import _BackbonePreprocess
+    model = tf.keras.models.load_model(
+        model_path,
+        safe_mode=False,
+        custom_objects={"_BackbonePreprocess": _BackbonePreprocess},
+    )
 
     class_names = load_class_names(cfg.model_save_dir)
     logger.info(f"Loaded {len(class_names)} class names")

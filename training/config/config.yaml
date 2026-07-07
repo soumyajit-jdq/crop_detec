@@ -17,19 +17,24 @@ tensorboard_dir: "outputs/tensorboard"
 model_type: "transfer"
 
 # Backbone used when model_type == "transfer"
-# Options: "resnet50", "efficientnetb3"
-backbone: "efficientnetb3"
+# Options: "resnet50", "efficientnetb0", "efficientnetb3"
+backbone: "efficientnetb0"
 
 # Image 
 image_size: 224
 color_mode: "rgb"  # "rgb" or "grayscale"
 
 # Training
-batch_size: 16
+batch_size: 32
 epochs: 50
 learning_rate: 0.001
 optimizer: "adam"  # "adam" or "sgd"
 label_smoothing: 0.1
+
+# Learning rate schedule
+lr_schedule: "cosine"          # "cosine" or "plateau"
+warmup_epochs: 3               # linear warmup before cosine decay
+cosine_min_lr: 0.00001         # floor LR at end of cosine decay
 
 # Fine-tuning (transfer only): unfreeze top N layers of backbone
 # Set to 0 to keep backbone fully frozen

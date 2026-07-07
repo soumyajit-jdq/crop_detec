@@ -1,5 +1,5 @@
 # src/models/transfer_cnn.py
-"""Transfer-learning models (ResNet50 / EfficientNetB3) for crop classification."""
+"""Transfer-learning models (ResNet50 / EfficientNetV2) for crop classification."""
 
 from __future__ import annotations
 
@@ -10,11 +10,15 @@ from tensorflow.keras import layers, Model
 
 from src.utils.logger import logger
 
-# Map config string → Keras application
+# Map config string → (Keras application class, preprocess function)
 _BACKBONES = {
     "resnet50": (
         tf.keras.applications.ResNet50,
         tf.keras.applications.resnet50.preprocess_input,
+    ),
+    "efficientnetb0": (
+        tf.keras.applications.EfficientNetV2B0,
+        tf.keras.applications.efficientnet_v2.preprocess_input,
     ),
     "efficientnetb3": (
         tf.keras.applications.EfficientNetV2B3,
@@ -23,10 +27,31 @@ _BACKBONES = {
 }
 
 
+class _BackbonePreprocess(layers.Layer):
+    """A proper Keras layer for backbone-specific preprocessing.
+
+    Replaces the old Lambda layer to avoid serialization issues
+    across different Keras/TF versions.
+    """
+
+    def __init__(self, preprocess_fn, **kwargs):
+        super().__init__(**kwargs)
+        self._preprocess_fn = preprocess_fn
+
+    def call(self, inputs):
+        # Undo 0-1 rescaling back to 0-255 for backbone preprocess
+        return self._preprocess_fn(inputs * 255.0)
+
+    def get_config(self):
+        config = super().get_config()
+        # We don't serialize preprocess_fn — it's re-attached during build
+        return config
+
+
 def build_transfer_cnn(
     input_shape: Tuple[int, int, int],
     num_classes: int,
-    backbone: str = "efficientnetb3",
+    backbone: str = "efficientnetb0",
 ) -> Model:
     """Build a transfer-learning model.
 
@@ -47,12 +72,8 @@ def build_transfer_cnn(
 
     inputs = layers.Input(shape=input_shape, name="input_image")
 
-    # Backbone-specific preprocessing (handles rescaling internally)
-    x = layers.Lambda(
-        lambda img: preprocess_fn(img * 255.0),  # undo 0-1 rescaling for backbone preprocess
-        output_shape=lambda input_shape: input_shape,
-        name="backbone_preprocess",
-    )(inputs)
+    # Backbone-specific preprocessing via a proper serializable layer
+    x = _BackbonePreprocess(preprocess_fn, name="backbone_preprocess")(inputs)
 
     base_model = BackboneClass(
         include_top=False,
