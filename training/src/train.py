@@ -22,12 +22,6 @@ if gpus:
     except RuntimeError as e:
         pass
 
-# Enable mixed precision for faster training
-try:
-    tf.keras.mixed_precision.set_global_policy('mixed_float16')
-except Exception:
-    pass  # Fall back to float32 if not supported
-
 from src.config import Config, load_config
 from src.dataset import load_datasets
 from src.models import build_model
