@@ -6,19 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 
-if "DML_VISIBLE_DEVICES" not in os.environ:
-    os.environ["DML_VISIBLE_DEVICES"] = "0"
-
 import tensorflow as tf
-
-# Enable GPU memory growth
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        pass
 
 from src.config import load_config
 from src.utils.logger import logger
@@ -73,7 +61,7 @@ def export_all(
     """Export the trained model to all configured formats."""
     cfg = load_config(config_path)
 
-    # ── Determine model path ─────────────────────────────────
+    # Determine model path
     if model_path is None:
         model_name = f"crop_cnn_{cfg.model_type}"
         if cfg.model_type == "transfer":
@@ -81,7 +69,7 @@ def export_all(
         model_path = os.path.join(cfg.model_save_dir, f"{model_name}.h5")
 
     logger.info(f"Loading model from: {model_path}")
-    model = tf.keras.models.load_model(model_path, safe_mode=False)
+    model = tf.keras.models.load_model(model_path)
 
     out_dir = cfg.model_save_dir
     exported: dict[str, str] = {}
@@ -120,7 +108,7 @@ def main() -> None:
     args = parser.parse_args()
 
     export_all(model_path=args.model, config_path=args.config)
-    logger.info("✅ Export complete!")
+    logger.info("Export complete!")
 
 
 if __name__ == "__main__":

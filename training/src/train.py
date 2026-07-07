@@ -76,12 +76,12 @@ def _get_callbacks(cfg: Config, phase: str = "initial") -> list:
 
 def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
     """Run the full training pipeline and return the trained model."""
-    # ── Data ─────────────────────────────────────────────────
+    # Data
     train_ds, val_ds, _test_ds, class_names = load_datasets(cfg)
     num_classes = len(class_names)
     cfg.num_classes = num_classes
 
-    # ── Model ────────────────────────────────────────────────
+    # Model 
     model_name = f"crop_cnn_{cfg.model_type}"
     if cfg.model_type == "transfer":
         model_name += f"_{cfg.backbone}"
@@ -89,13 +89,13 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
 
     if resume and os.path.exists(checkpoint_path):
         logger.info(f"Resuming training from checkpoint: {checkpoint_path}")
-        model = tf.keras.models.load_model(checkpoint_path, safe_mode=False)
+        model = tf.keras.models.load_model(checkpoint_path)
     else:
         logger.info("Building new model.")
         model = build_model(cfg, num_classes)
         model.summary(print_fn=logger.info)
 
-    # ── Phase 1 — Initial training ───────────────────────────
+    # Phase 1 — Initial training─
     logger.info(f"Phase 1: Training for {cfg.epochs} epochs (lr={cfg.learning_rate})")
     model.fit(
         train_ds,
@@ -104,7 +104,7 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
         callbacks=_get_callbacks(cfg, phase="phase1_initial"),
     )
 
-    # ── Phase 2 — Fine-tuning (transfer only) ────────────────
+    # Phase 2 — Fine-tuning (transfer only)
     if cfg.model_type == "transfer" and cfg.fine_tune_layers > 0:
         logger.info(
             f"Phase 2: Fine-tuning top {cfg.fine_tune_layers} backbone layers "
@@ -130,7 +130,7 @@ def train(cfg: Config, resume: bool = False) -> tf.keras.Model:
             callbacks=_get_callbacks(cfg, phase="phase2_finetune"),
         )
 
-    # ── Save final model ─────────────────────────────────────
+    # Save final model─
     model_name = f"crop_cnn_{cfg.model_type}"
     if cfg.model_type == "transfer":
         model_name += f"_{cfg.backbone}"

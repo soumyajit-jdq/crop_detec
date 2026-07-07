@@ -120,11 +120,11 @@ def main() -> None:
     )
 
     print("\n" + "=" * 50)
-    print(f"  🌾 Predicted Crop : {result['predicted_class']}")
-    print(f"  📊 Confidence     : {result['confidence']:.2%}")
+    print(f"Predicted Crop : {result['predicted_class']}")
+    print(f"Confidence     : {result['confidence']:.2%}")
     print(f"\n  Top-{args.top_k} Predictions:")
     for i, pred in enumerate(result["top_k"], 1):
-        bar = "█" * int(pred["confidence"] * 30)
+        bar = "*" * int(pred["confidence"] * 30)
         print(f"    {i}. {pred['class_name']:<45s} {pred['confidence']:.2%} {bar}")
     print("=" * 50 + "\n")
 

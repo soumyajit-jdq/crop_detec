@@ -50,6 +50,7 @@ def build_transfer_cnn(
     # Backbone-specific preprocessing (handles rescaling internally)
     x = layers.Lambda(
         lambda img: preprocess_fn(img * 255.0),  # undo 0-1 rescaling for backbone preprocess
+        output_shape=lambda input_shape: input_shape,
         name="backbone_preprocess",
     )(inputs)
 

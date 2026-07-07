@@ -74,7 +74,7 @@ def evaluate(
     _, _, test_ds, class_names = load_datasets(cfg)
     num_classes = len(class_names)
 
-    # ── Load model ───────────────────────────────────────────
+    # Load model 
     if model_path is None:
         model_name = f"crop_cnn_{cfg.model_type}"
         if cfg.model_type == "transfer":
@@ -84,11 +84,11 @@ def evaluate(
     logger.info(f"Loading model from: {model_path}")
     model = tf.keras.models.load_model(model_path, safe_mode=False)
 
-    # ── Built-in evaluation ──────────────────────────────────
+    # Built-in evaluation
     results = model.evaluate(test_ds, return_dict=True)
     logger.info(f"Test results: {results}")
 
-    # ── Detailed per-class metrics ───────────────────────────
+    # Detailed per-class metrics 
     y_true_list: list[int] = []
     y_pred_list: list[int] = []
 
